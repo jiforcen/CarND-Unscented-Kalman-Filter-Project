@@ -24,13 +24,13 @@ UKF::UKF() {
   P_ = MatrixXd(5, 5);
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 30;
+  std_a_ = 0.35;
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = 30;
+  std_yawdd_ = 0.20;
 
   // Laser measurement noise standard deviation position1 in m
-  std_laspx_ = 0.15;
+  std_laspx_ = 0.55;
 
   // Laser measurement noise standard deviation position2 in m
   std_laspy_ = 0.15;
@@ -59,7 +59,7 @@ UKF::UKF() {
   n_aug_ = 7;
 
   // Sigma point spreading parameter
-  lambda_ = 3 - n_x_;
+  lambda_ = 3.0 - n_x_;
 
    // Weights of sigma points
   weights_ = VectorXd(2 * n_aug_ + 1);
@@ -105,15 +105,16 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   if (!is_initialized_) {
 
     // first measurement
-    x_ << 1, 1, 1, 1, 0.1;
+    x_ << 1.0, 1.0, 0, 0.0, 0.0;
+
 
     // init covariance matrix
-    P_ << 0.15,   0, 0, 0, 0,
-            0, 0.15, 0, 0, 0,
-            0,    0, 1, 0, 0,
-            0,    0, 0, 1, 0,
-            0,    0, 0, 0, 1;
-
+    P_ << 3, 0, 0, 0,   0,
+          0, 3, 0, 0,   0,
+          0, 0, 3, 0,   0,
+          0, 0, 0, 0.2, 0,
+          0, 0, 0, 0, 0.2;
+            
     if (meas_package.sensor_type_ == MeasurementPackage::RADAR) {
       float rho = meas_package.raw_measurements_(0);
       float phi = meas_package.raw_measurements_(1);
@@ -144,6 +145,14 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   // delta_t between measurements
   float delta_t = (meas_package.timestamp_ - time_us_) / 1000000.0; //dt - expressed in seconds
   time_us_ = meas_package.timestamp_;
+  //UKF::Prediction(delta_t);
+
+  while (delta_t > 0.2)
+  {
+      double step = 0.1;
+      UKF::Prediction(step);
+      delta_t -= step;
+  }
   UKF::Prediction(delta_t);
 
   /*****************************************************************************
@@ -421,6 +430,11 @@ void UKF::PredictRadarMeasurement(VectorXd* z_out, MatrixXd* S_out, MatrixXd* Zs
     double v1 = cos(yaw)*v;
     double v2 = sin(yaw)*v;
 
+    if (fabs(p_x) < 0.001)
+      p_x = 0.001;
+    if (fabs(p_y) < 0.001)
+      p_y = 0.001;
+
     // measurement model
     Zsig(0,i) = sqrt(p_x*p_x + p_y*p_y);                        //r
     Zsig(1,i) = atan2(p_y,p_x);                                 //phi
@@ -546,7 +560,6 @@ void UKF::PredictLidarMeasurement(VectorXd* z_out, MatrixXd* S_out, MatrixXd* Zs
   MatrixXd R = MatrixXd(n_z,n_z);
   R << std_laspx_*std_laspx_, 0,
        0, std_laspy_*std_laspy_;
-  S = S + R;
   S = S + R;
 
   //write result
