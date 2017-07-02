@@ -30,7 +30,7 @@ UKF::UKF() {
   std_yawdd_ = 0.20;
 
   // Laser measurement noise standard deviation position1 in m
-  std_laspx_ = 0.55;
+  std_laspx_ = 0.15;
 
   // Laser measurement noise standard deviation position2 in m
   std_laspy_ = 0.15;
@@ -109,11 +109,11 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 
 
     // init covariance matrix
-    P_ << 3, 0, 0, 0,   0,
-          0, 3, 0, 0,   0,
-          0, 0, 3, 0,   0,
-          0, 0, 0, 0.2, 0,
-          0, 0, 0, 0, 0.2;
+    P_ << 1, 0, 0, 0, 0,
+          0, 1, 0, 0, 0,
+          0, 0, 1, 0, 0,
+          0, 0, 0, 1, 0,
+          0, 0, 0, 0, 1;
             
     if (meas_package.sensor_type_ == MeasurementPackage::RADAR) {
       float rho = meas_package.raw_measurements_(0);
@@ -145,8 +145,8 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   // delta_t between measurements
   float delta_t = (meas_package.timestamp_ - time_us_) / 1000000.0; //dt - expressed in seconds
   time_us_ = meas_package.timestamp_;
-  //UKF::Prediction(delta_t);
-
+  UKF::Prediction(delta_t);
+/*
   while (delta_t > 0.2)
   {
       double step = 0.1;
@@ -154,7 +154,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
       delta_t -= step;
   }
   UKF::Prediction(delta_t);
-
+*/
   /*****************************************************************************
    *  Update
    ****************************************************************************/
